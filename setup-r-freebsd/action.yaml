@@ -82,9 +82,13 @@ runs:
                  R.Version()$os,
                  R.Version()$arch
                ))'
-      # if that fails, try to install the released version from source
+      # if that fails, try to install the released version from source; if that
+      # also fails, warn rather than fail the action — pak currently does not
+      # build under R-devel on FreeBSD (tsitter: undefined ts_tree_delete), and
+      # a working R without pak is more useful than no R.
       R -q -e 'library(pak)' ||
-        R -q -e 'install.packages("pak", lib = Sys.getenv("R_LIBS_SITE"), repos = "https://cloud.r-project.org")'
+        R -q -e 'install.packages("pak", lib = Sys.getenv("R_LIBS_SITE"), repos = "https://cloud.r-project.org")' ||
+        echo "::warning::pak could not be installed; continuing without it"
       echo "::endgroup::"
     shell: freebsd {0}
 
@@ -103,5 +107,6 @@ runs:
       .Library
       Sys.getenv("R_LIBS_SITE")
       Sys.getenv("R_LIBS_USER")
-      find.package("pak")
+      # pak is best-effort (see the install step); report rather than assert
+      tryCatch(find.package("pak"), error = message)
     shell: Rscript {0}
