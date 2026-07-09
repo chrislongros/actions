@@ -35,6 +35,21 @@ tar -xf R-devel.tar.gz
 cd R-devel
 SVNREV="$(awk '/Revision:/ {print $2}' SVN-REVISION 2>/dev/null || echo unknown)"
 
+# R-devel bug: devPS.c calls unlink() without <unistd.h>, fatal under -std=gnu23
+# on platforms where the declaration is not transitive (reported upstream 2026-07).
+# Patch the source rather than force-include via CPPFLAGS, which would leak the
+# flag into Makeconf and every package build. Remove once upstream fixes it; the
+# grep makes this a no-op when they do.
+DEVPS=src/library/grDevices/src/devPS.c
+if ! grep -q '#include <unistd.h>' "$DEVPS"; then
+  awk '/#include "zlib.h"/ && !done {
+         print "#ifdef HAVE_UNISTD_H"
+         print "#include <unistd.h> /* for unlink */"
+         print "#endif"; print ""; done=1
+       } {print}' "$DEVPS" > "$DEVPS.tmp" && mv "$DEVPS.tmp" "$DEVPS"
+  echo ">> applied unistd.h workaround to devPS.c"
+fi
+
 # FreeBSD base has no Fortran compiler, so gfortran comes from the gcc port. R must
 # find libgfortran at run time as well as link time, hence the rpath.
 GVER="${GCC_PORT#gcc}"
@@ -43,11 +58,7 @@ GCCLIB="/usr/local/lib/${GCC_PORT}"     # verified: holds libgfortran.so.5
 
 export CC=cc CXX=c++                    # clang, from base
 export FC="$FC_BIN" F77="$FC_BIN"
-# -include unistd.h: R-devel compiles with -std=gnu23, where an undeclared
-# function is an error, and devPS.c calls unlink() without including unistd.h
-# (declared transitively on glibc, not here). Reported upstream (2026-07);
-# drop the flag once fixed.
-export CPPFLAGS="-I/usr/local/include -include unistd.h"
+export CPPFLAGS="-I/usr/local/include"
 export LDFLAGS="-L/usr/local/lib -Wl,-rpath,/usr/local/lib -L${GCCLIB} -Wl,-rpath,${GCCLIB}"
 
 XOPT="--with-x=no"

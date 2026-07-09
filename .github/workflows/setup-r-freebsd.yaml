@@ -30,6 +30,14 @@ jobs:
           getRversion()
           R.version[["platform"]]
           R.version[["status"]]
+        shell: Rscript {0}
+
+      # Non-fatal so a pak build issue cannot mask the state of R itself.
+      # (pak compiled fine under release R; under a devel R built with a
+      # force-included unistd.h it failed — see build-r-devel.sh.)
+      - name: pak status (informational)
+        continue-on-error: true
+        run: |
           find.package("pak")
         shell: Rscript {0}
 
