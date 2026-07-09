@@ -43,7 +43,11 @@ GCCLIB="/usr/local/lib/${GCC_PORT}"     # verified: holds libgfortran.so.5
 
 export CC=cc CXX=c++                    # clang, from base
 export FC="$FC_BIN" F77="$FC_BIN"
-export CPPFLAGS="-I/usr/local/include"
+# -include unistd.h: R-devel compiles with -std=gnu23, where an undeclared
+# function is an error, and devPS.c calls unlink() without including unistd.h
+# (declared transitively on glibc, not here). Reported upstream (2026-07);
+# drop the flag once fixed.
+export CPPFLAGS="-I/usr/local/include -include unistd.h"
 export LDFLAGS="-L/usr/local/lib -Wl,-rpath,/usr/local/lib -L${GCCLIB} -Wl,-rpath,${GCCLIB}"
 
 XOPT="--with-x=no"

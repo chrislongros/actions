@@ -13,7 +13,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: R-devel FreeBSD 14.3 (x86_64)
+    name: R-devel FreeBSD 14.3 (amd64)
     steps:
       - uses: actions/checkout@v6
 
@@ -31,7 +31,7 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: R-devel-freebsd14-x86_64
+          name: R-devel-freebsd14-amd64
           path: artifacts/*
           if-no-files-found: error
 

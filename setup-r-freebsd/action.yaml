@@ -22,7 +22,7 @@ inputs:
       artifact should be hosted long term is an open question; the default is
       a community build.
     required: false
-    default: 'https://github.com/chrislongros/actions/releases/download/r-devel-latest/R-devel-freebsd14-x86_64-gcc14.tar.zst'
+    default: 'https://github.com/chrislongros/actions/releases/download/r-devel-latest/R-devel-freebsd14-amd64-gcc14.tar.zst'
 
 runs:
   using: "composite"
@@ -51,9 +51,9 @@ runs:
       echo "::group::Install R"
       # Install some system packages, so we can install tidyverse, devtools
       if [ "${{ inputs.r-version }}" = "devel" ]; then
-        # Prebuilt R-devel snapshot: install its runtime deps (deps.txt sits
-        # next to the tarball; the gcc port in it provides libgfortran, which
-        # the R binaries reference by rpath), unpack, put on PATH.
+        # Prebuilt R-devel snapshot. deps.txt sits next to the tarball and
+        # lists its runtime packages, notably the gcc port whose libgfortran
+        # the R binaries reference by rpath.
         url="${{ inputs.r-devel-url }}"
         fetch -o /tmp/R-deps.txt "${url%/*}/deps.txt"
         pkg install -y $(cat /tmp/R-deps.txt) checkbashisms libxml2 pkgconf libgit2 qpdf
