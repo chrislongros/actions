@@ -1,0 +1,40 @@
+name: Test setup-r-freebsd
+
+# Exercises the setup-r-freebsd action, including the new r-version option.
+# The devel path needs the r-devel-latest release to exist; run the
+# build-r-devel-freebsd workflow first.
+
+on:
+  workflow_dispatch:
+    inputs:
+      r-version:
+        description: 'R version to test.'
+        type: choice
+        options: [devel, release]
+        default: devel
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: FreeBSD R ${{ inputs.r-version }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./setup-r-freebsd
+        with:
+          release: '14.3'
+          r-version: ${{ inputs.r-version }}
+
+      - name: R sanity check
+        run: |
+          getRversion()
+          R.version[["platform"]]
+          R.version[["status"]]
+          find.package("pak")
+        shell: Rscript {0}
+
+      - name: Confirm devel really is devel
+        if: inputs.r-version == 'devel'
+        run: |
+          stopifnot(R.version[["status"]] == "Under development (unstable)")
+        shell: Rscript {0}

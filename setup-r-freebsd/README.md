@@ -35,6 +35,12 @@ all the heavy lifting.
 * `release`: FreeBSD release to use. Default is '14.1'. See
   https://github.com/vmactions/freebsd-vm#5-select-release for the list
   of supported releases.
+* `r-version`: `release` (default) installs R from `pkg`; `devel` installs a
+  prebuilt daily R-devel snapshot instead. The devel tarball's FreeBSD major
+  must match `release`.
+* `r-devel-url`: where the R-devel tarball comes from when `r-version` is
+  `devel`. A `deps.txt` next to it lists the runtime packages. Built by the
+  `build-r-devel-freebsd` workflow; unofficial community build.
 
 ## Example workflow for R packages
 

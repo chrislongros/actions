@@ -9,6 +9,20 @@ inputs:
     description: 'The release version of FreeBSD VM.'
     required: false
     default: '14.1'
+  r-version:
+    description: |
+      R version to install: "release" (from pkg) or "devel" (prebuilt daily
+      snapshot, see the r-devel-url input).
+    required: false
+    default: 'release'
+  r-devel-url:
+    description: |
+      URL of the prebuilt R-devel tarball used when r-version is "devel".
+      A deps.txt listing the runtime packages must sit next to it. Where this
+      artifact should be hosted long term is an open question; the default is
+      a community build.
+    required: false
+    default: 'https://github.com/chrislongros/actions/releases/download/r-devel-latest/R-devel-freebsd14-x86_64-gcc14.tar.zst'
 
 runs:
   using: "composite"
@@ -36,7 +50,23 @@ runs:
       # Install R and pak
       echo "::group::Install R"
       # Install some system packages, so we can install tidyverse, devtools
-      pkg install -y R checkbashisms libxml2 pkgconf libgit2 qpdf pcre2
+      if [ "${{ inputs.r-version }}" = "devel" ]; then
+        # Prebuilt R-devel snapshot: install its runtime deps (deps.txt sits
+        # next to the tarball; the gcc port in it provides libgfortran, which
+        # the R binaries reference by rpath), unpack, put on PATH.
+        url="${{ inputs.r-devel-url }}"
+        fetch -o /tmp/R-deps.txt "${url%/*}/deps.txt"
+        pkg install -y $(cat /tmp/R-deps.txt) checkbashisms libxml2 pkgconf libgit2 qpdf
+        fetch -o /tmp/R.tar.zst "$url"
+        mkdir -p /opt
+        tar --zstd -xf /tmp/R.tar.zst -C /opt
+        rm /tmp/R.tar.zst
+        ln -sf /opt/R-devel/bin/R       /usr/local/bin/R
+        ln -sf /opt/R-devel/bin/Rscript /usr/local/bin/Rscript
+        R --version
+      else
+        pkg install -y R checkbashisms libxml2 pkgconf libgit2 qpdf pcre2
+      fi
       echo "::endgroup::"
       echo "::group::Configure R"
       ncpu=`(sysctl dev.cpu | grep location | wc -l) || echo 4`

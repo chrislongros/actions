@@ -1,0 +1,48 @@
+name: build-r-devel-freebsd
+
+# Builds the prebuilt R-devel tarball that setup-r-freebsd's "devel" option
+# installs, and publishes it to the rolling `r-devel-latest` release of this
+# repository. Run manually; a daily schedule would belong upstream.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write        # required to publish releases
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: R-devel FreeBSD 14.3 (x86_64)
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build R-devel inside a FreeBSD VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.3"
+          usesh: true
+          copyback: true        # sync artifacts/ back to the host workspace
+          prepare: |
+            pkg install -y curl
+          run: |
+            sh ./setup-r-freebsd/build-r-devel.sh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: R-devel-freebsd14-x86_64
+          path: artifacts/*
+          if-no-files-found: error
+
+      # Fixed tag, so the r-devel-url default in action.yaml stays valid no
+      # matter what else this repository releases.
+      - name: Refresh rolling release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: r-devel-latest
+          name: R-devel (rolling)
+          body: "Prebuilt R-devel for FreeBSD, consumed by setup-r-freebsd's devel option. Unofficial community build."
+          prerelease: false
+          make_latest: false
+          files: artifacts/*
